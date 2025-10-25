@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="utf-8" standalone="no"?>
+<modDesc descVersion="100">
+    <author>Ritter</author>
+    <version>1.0.0.0</version>
+    <title>
+        <en>Remove Contract</en>
+    </title>
+    <description>
+        <en><![CDATA[
+Remove unwanted contracts from your contract list.
+
+Features:
+- Adds a "Remove Contract" button to the contracts menu
+- Keyboard shortcut: Press 'R' to remove selected contract
+- Configure keyboard shortcut in input settings
+
+Changelog:
+1.0.0.0:
+- Initial release
+- Contract removal functionality
+- Keyboard shortcut support
+        ]]></en>
+    </description>
+
+    <iconFilename>icon_RemoveContract.dds</iconFilename>
+    <multiplayer supported="false"/>
+
+    <l10n>
+        <text name="button_removeContract">
+            <en>Remove Contract</en>
+        </text>
+        <text name="input_REMOVE_CONTRACT">
+            <en>Remove Contract</en>
+        </text>
+    </l10n>
+
+    <extraSourceFiles>
+        <sourceFile filename="scripts/RmLogging.lua"/>
+        <sourceFile filename="scripts/RemoveContract.lua"/>
+    </extraSourceFiles>
+
+    <actions>
+        <action name="REMOVE_CONTRACT" category="MENU" axisType="HALF" ignoreComboMask="true" />
+    </actions>
+
+    <inputBinding>
+        <actionBinding action="REMOVE_CONTRACT">
+            <binding device="KB_MOUSE_DEFAULT" input="KEY_r" index="1" />
+        </actionBinding>
+    </inputBinding>
+</modDesc>
