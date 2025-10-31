@@ -18,6 +18,12 @@ RmLogging.setLogPrefix(RemoveContract.LOG_PREFIX)
 function RemoveContract.onFrameOpen(contractsFrame)
     RmLogging.logDebug("Contracts frame opened")
 
+    -- Validate frame parameter
+    if not contractsFrame or type(contractsFrame) ~= "table" then
+        RmLogging.logWarning("Invalid contractsFrame parameter in onFrameOpen")
+        return
+    end
+
     -- Create button info on the frame (like acceptButtonInfo/leaseButtonInfo)
     if not contractsFrame.removeButtonInfo then
         contractsFrame.removeButtonInfo = {
@@ -40,6 +46,12 @@ function RemoveContract.setButtonsForState(contractsFrame, state, canLease)
     -- canLease parameter unused but required by hook signature
     RmLogging.logTrace("setButtonsForState called - state: %s", tostring(state))
 
+    -- Validate frame parameter
+    if not contractsFrame or type(contractsFrame) ~= "table" then
+        RmLogging.logTrace("Invalid contractsFrame parameter in setButtonsForState")
+        return
+    end
+
     -- Only add button for available contracts (state == 0)
     if state == RemoveContract.STATE_AVAILABLE and contractsFrame.removeButtonInfo then
         -- Check if already in list
@@ -51,7 +63,7 @@ function RemoveContract.setButtonsForState(contractsFrame, state, canLease)
             end
         end
 
-        if not found and contractsFrame.menuButtonInfo then
+        if not found and contractsFrame.menuButtonInfo and type(contractsFrame.menuButtonInfo) == "table" then
             table.insert(contractsFrame.menuButtonInfo, contractsFrame.removeButtonInfo)
             contractsFrame:setMenuButtonInfoDirty()
             RmLogging.logTrace("Remove button added to menu button list")
@@ -70,6 +82,18 @@ end
 ---@return boolean Success status of contract removal
 function RemoveContract.onRemoveButtonClick(contractsFrame)
     RmLogging.logDebug("Remove button clicked")
+
+    -- Validate frame parameter
+    if not contractsFrame or type(contractsFrame) ~= "table" then
+        RmLogging.logError("Invalid contractsFrame parameter in onRemoveButtonClick")
+        return false
+    end
+
+    -- Validate frame methods exist
+    if not contractsFrame.getSelectedContract then
+        RmLogging.logError("contractsFrame.getSelectedContract method not available")
+        return false
+    end
 
     -- Use frame's built-in method to get selected contract (like onButtonDismiss does)
     local contract = contractsFrame:getSelectedContract()
@@ -116,6 +140,12 @@ function RemoveContract.onRemoveButtonClick(contractsFrame)
 
     RmLogging.logInfo("Removing contract - Type: %s, Field: %s", contractType, fieldId)
 
+    -- Validate mission manager exists before attempting deletion
+    if not g_missionManager then
+        RmLogging.logError("Mission manager not available - cannot remove contract")
+        return false
+    end
+
     -- Try FS25's safe deletion method first, fall back to direct deletion
     local success, result = pcall(function()
         if g_missionManager.markMissionForDeletion ~= nil then
@@ -141,22 +171,77 @@ function RemoveContract.onRemoveButtonClick(contractsFrame)
         RmLogging.logInfo("Contract deleted")
     end
 
-    -- Refresh the UI
-    contractsFrame:updateList()
+    -- Refresh the UI (with validation)
+    if contractsFrame.updateList then
+        contractsFrame:updateList()
+    else
+        RmLogging.logWarning("contractsFrame.updateList method not available - UI may not refresh")
+    end
 
     return true
 end
 
--- Hook into onFrameOpen
-InGameMenuContractsFrame.onFrameOpen = Utils.appendedFunction(
-    InGameMenuContractsFrame.onFrameOpen,
-    RemoveContract.onFrameOpen
-)
+---Validates that all required game dependencies are available
+---@return boolean True if all dependencies are valid, false otherwise
+local function validateDependencies()
+    -- Check InGameMenuContractsFrame exists
+    if not InGameMenuContractsFrame then
+        RmLogging.logError("InGameMenuContractsFrame not available - cannot initialize mod")
+        return false
+    end
 
--- Hook into setButtonsForState to add our button to the list
-InGameMenuContractsFrame.setButtonsForState = Utils.appendedFunction(
-    InGameMenuContractsFrame.setButtonsForState,
-    RemoveContract.setButtonsForState
-)
+    -- Check Utils.appendedFunction exists
+    if not Utils or not Utils.appendedFunction then
+        RmLogging.logError("Utils.appendedFunction not available - cannot hook into game functions")
+        return false
+    end
 
-RmLogging.logInfo("RemoveContract script loaded successfully")
+    -- Check InputAction.REMOVE_CONTRACT exists
+    if not InputAction or not InputAction.REMOVE_CONTRACT then
+        RmLogging.logError("InputAction.REMOVE_CONTRACT not registered - check modDesc.xml configuration")
+        return false
+    end
+
+    RmLogging.logDebug("All dependencies validated successfully")
+    return true
+end
+
+---Sets up hooks into Giants Engine functions with error protection
+---@return boolean True if hooks were successfully attached, false otherwise
+local function setupHooks()
+    local success, err = pcall(function()
+        -- Hook into onFrameOpen to initialize button info
+        InGameMenuContractsFrame.onFrameOpen = Utils.appendedFunction(
+            InGameMenuContractsFrame.onFrameOpen,
+            RemoveContract.onFrameOpen
+        )
+
+        -- Hook into setButtonsForState to add our button to the list
+        InGameMenuContractsFrame.setButtonsForState = Utils.appendedFunction(
+            InGameMenuContractsFrame.setButtonsForState,
+            RemoveContract.setButtonsForState
+        )
+    end)
+
+    if not success then
+        RmLogging.logError("Failed to attach hooks: %s", tostring(err))
+        return false
+    end
+
+    RmLogging.logDebug("Hooks attached successfully")
+    return true
+end
+
+-- Validate dependencies before attempting initialization
+if not validateDependencies() then
+    RmLogging.logError("RemoveContract failed to load - missing dependencies")
+    return
+end
+
+-- Set up hooks with error protection
+if not setupHooks() then
+    RmLogging.logError("RemoveContract failed to load - hook setup failed")
+    return
+end
+
+RmLogging.logInfo("RemoveContract loaded successfully")

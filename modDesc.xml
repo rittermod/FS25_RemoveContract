@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8" standalone="no"?>
 <modDesc descVersion="100">
     <author>Ritter</author>
-    <version>1.0.0.0</version>
+    <version>1.0.0.1</version>
     <title>
         <en>Remove Contract</en>
     </title>
@@ -15,11 +15,14 @@ Features:
 - Configure keyboard shortcut in input settings
 
 Changelog:
+1.0.0.1:
+- Improved robustness
+
 1.0.0.0:
 - Initial release
 - Contract removal functionality
 - Keyboard shortcut support
-        ]]></en>
+        ]]>        </en>
     </description>
 
     <iconFilename>icon_RemoveContract.dds</iconFilename>
