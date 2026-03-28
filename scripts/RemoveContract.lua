@@ -6,21 +6,20 @@
 RemoveContract = {}
 
 -- Module constants
-RemoveContract.LOG_PREFIX = "[RemoveContract]"
 RemoveContract.STATE_AVAILABLE = 0
 
 -- Initialize logging
-RmLogging.setLogPrefix(RemoveContract.LOG_PREFIX)
--- RmLogging.setLogLevel(RmLogging.LOG_LEVEL.DEBUG)
+local Log = RmLogging.getLogger("RemoveContract")
+-- Log:setLevel("DEBUG")
 
 ---Initializes remove button info when contracts frame opens
 ---@param contractsFrame table The InGameMenuContractsFrame instance
 function RemoveContract.onFrameOpen(contractsFrame)
-    RmLogging.logDebug("Contracts frame opened")
+    Log:debug("Contracts frame opened")
 
     -- Validate frame parameter
     if not contractsFrame or type(contractsFrame) ~= "table" then
-        RmLogging.logWarning("Invalid contractsFrame parameter in onFrameOpen")
+        Log:warning("Invalid contractsFrame parameter in onFrameOpen")
         return
     end
 
@@ -30,11 +29,11 @@ function RemoveContract.onFrameOpen(contractsFrame)
             inputAction = InputAction.REMOVE_CONTRACT,
             text = g_i18n:getText("button_removeContract") or "Remove Contract",
             callback = function()
-                RmLogging.logDebug("Remove button callback triggered")
+                Log:debug("Remove button callback triggered")
                 contractsFrame:onButtonRemove()
             end
         }
-        RmLogging.logDebug("Button info created on contracts frame")
+        Log:debug("Button info created on contracts frame")
     end
 end
 
@@ -44,11 +43,11 @@ end
 ---@param canLease boolean Whether lease button should be shown (unused)
 function RemoveContract.setButtonsForState(contractsFrame, state, canLease)
     -- canLease parameter unused but required by hook signature
-    RmLogging.logTrace("setButtonsForState called - state: %s", tostring(state))
+    Log:trace("setButtonsForState called - state: %s", tostring(state))
 
     -- Validate frame parameter
     if not contractsFrame or type(contractsFrame) ~= "table" then
-        RmLogging.logTrace("Invalid contractsFrame parameter in setButtonsForState")
+        Log:trace("Invalid contractsFrame parameter in setButtonsForState")
         return
     end
 
@@ -66,14 +65,14 @@ function RemoveContract.setButtonsForState(contractsFrame, state, canLease)
         if not found and contractsFrame.menuButtonInfo and type(contractsFrame.menuButtonInfo) == "table" then
             table.insert(contractsFrame.menuButtonInfo, contractsFrame.removeButtonInfo)
             contractsFrame:setMenuButtonInfoDirty()
-            RmLogging.logTrace("Remove button added to menu button list")
+            Log:trace("Remove button added to menu button list")
         end
     end
 end
 
 ---Handles remove button press event
 function InGameMenuContractsFrame:onButtonRemove()
-    RmLogging.logDebug("onButtonRemove called")
+    Log:debug("onButtonRemove called")
     RemoveContract.onRemoveButtonClick(self)
 end
 
@@ -81,17 +80,17 @@ end
 ---@param contractsFrame table The InGameMenuContractsFrame instance
 ---@return boolean Success status of contract removal
 function RemoveContract.onRemoveButtonClick(contractsFrame)
-    RmLogging.logDebug("Remove button clicked")
+    Log:debug("Remove button clicked")
 
     -- Validate frame parameter
     if not contractsFrame or type(contractsFrame) ~= "table" then
-        RmLogging.logError("Invalid contractsFrame parameter in onRemoveButtonClick")
+        Log:error("Invalid contractsFrame parameter in onRemoveButtonClick")
         return false
     end
 
     -- Validate frame methods exist
     if not contractsFrame.getSelectedContract then
-        RmLogging.logError("contractsFrame.getSelectedContract method not available")
+        Log:error("contractsFrame.getSelectedContract method not available")
         return false
     end
 
@@ -100,13 +99,13 @@ function RemoveContract.onRemoveButtonClick(contractsFrame)
 
     -- Validate contract and mission exist
     if not contract or not contract.mission then
-        RmLogging.logWarning("No valid contract selected")
+        Log:warning("No valid contract selected")
         return false
     end
 
     -- Check if contract is currently active
     if contract.mission.status == AbstractMission.STATUS_RUNNING then
-        RmLogging.logWarning("Cannot remove active contract")
+        Log:warning("Cannot remove active contract")
         return false
     end
 
@@ -138,11 +137,11 @@ function RemoveContract.onRemoveButtonClick(contractsFrame)
         end
     end
 
-    RmLogging.logInfo("Removing contract - Type: %s, Field: %s", contractType, fieldId)
+    Log:info("Removing contract - Type: %s, Field: %s", contractType, fieldId)
 
     -- Validate mission manager exists before attempting deletion
     if not g_missionManager then
-        RmLogging.logError("Mission manager not available - cannot remove contract")
+        Log:error("Mission manager not available - cannot remove contract")
         return false
     end
 
@@ -160,22 +159,22 @@ function RemoveContract.onRemoveButtonClick(contractsFrame)
     end)
 
     if not success then
-        RmLogging.logError("Failed to remove contract: %s", tostring(result))
+        Log:error("Failed to remove contract: %s", tostring(result))
         return false
     end
 
     -- Log successful removal
     if result == "marked" then
-        RmLogging.logInfo("Contract marked for deletion")
+        Log:info("Contract marked for deletion")
     elseif result == "deleted" then
-        RmLogging.logInfo("Contract deleted")
+        Log:info("Contract deleted")
     end
 
     -- Refresh the UI (with validation)
     if contractsFrame.updateList then
         contractsFrame:updateList()
     else
-        RmLogging.logWarning("contractsFrame.updateList method not available - UI may not refresh")
+        Log:warning("contractsFrame.updateList method not available - UI may not refresh")
     end
 
     return true
@@ -186,23 +185,23 @@ end
 local function validateDependencies()
     -- Check InGameMenuContractsFrame exists
     if not InGameMenuContractsFrame then
-        RmLogging.logError("InGameMenuContractsFrame not available - cannot initialize mod")
+        Log:error("InGameMenuContractsFrame not available - cannot initialize mod")
         return false
     end
 
     -- Check Utils.appendedFunction exists
     if not Utils or not Utils.appendedFunction then
-        RmLogging.logError("Utils.appendedFunction not available - cannot hook into game functions")
+        Log:error("Utils.appendedFunction not available - cannot hook into game functions")
         return false
     end
 
     -- Check InputAction.REMOVE_CONTRACT exists
     if not InputAction or not InputAction.REMOVE_CONTRACT then
-        RmLogging.logError("InputAction.REMOVE_CONTRACT not registered - check modDesc.xml configuration")
+        Log:error("InputAction.REMOVE_CONTRACT not registered - check modDesc.xml configuration")
         return false
     end
 
-    RmLogging.logDebug("All dependencies validated successfully")
+    Log:debug("All dependencies validated successfully")
     return true
 end
 
@@ -224,24 +223,24 @@ local function setupHooks()
     end)
 
     if not success then
-        RmLogging.logError("Failed to attach hooks: %s", tostring(err))
+        Log:error("Failed to attach hooks: %s", tostring(err))
         return false
     end
 
-    RmLogging.logDebug("Hooks attached successfully")
+    Log:debug("Hooks attached successfully")
     return true
 end
 
 -- Validate dependencies before attempting initialization
 if not validateDependencies() then
-    RmLogging.logError("RemoveContract failed to load - missing dependencies")
+    Log:error("RemoveContract failed to load - missing dependencies")
     return
 end
 
 -- Set up hooks with error protection
 if not setupHooks() then
-    RmLogging.logError("RemoveContract failed to load - hook setup failed")
+    Log:error("RemoveContract failed to load - hook setup failed")
     return
 end
 
-RmLogging.logInfo("RemoveContract loaded successfully")
+Log:info("RemoveContract loaded successfully")
